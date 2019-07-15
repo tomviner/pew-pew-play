@@ -1,56 +1,118 @@
 import pew
+import random
 
-WIDTH = 8
-HEIGHT = 8
 
 pew.init()
 
 screen = pew.Pix()
 
-p = [WIDTH - 1, HEIGHT - 1]
+WIDTH = screen.width
+HEIGHT = screen.height
 
-def get_mids(a, b):
+
+def get_intermediate_points(a, b):
     dx = b[0] - a[0]
     dy = b[1] - a[1]
-    ds = [dx, dy]
+    deltas = [dx, dy]
 
     long_axis = int(abs(dy) > abs(dx))
     short_axis = int(not long_axis)
 
-    d_long = ds[long_axis]
-    d_short = ds[short_axis]
+    d_long = deltas[long_axis]
+    d_short = deltas[short_axis]
 
+    # gradient
     m = d_short / d_long
-    print('m', m)
     sign = int(d_long / abs(d_long))
 
-    p = [None, None]
-    i = 0
-    for _ in range(abs(d_long) - 1):
-        i += sign
-        p[long_axis] = a[long_axis] + round(i)
+    # count the long axis offset, either up or down:
+    # --> 1, 2 ... d_long-2, d_long-1
+    # --> -1, - 2 ... d_long+2, d_long+1
+    for i in range(sign, d_long, sign):
+        p = [None, None]
+        p[long_axis] = a[long_axis] + i
         p[short_axis] = a[short_axis] + round(i * m)
-        yield list(p)
+        yield p
 
-while True:
-    for sign in (-1, 1):
-        for axis_pos in (0, 1):
-            for i in range(WIDTH - 1):
-                p[axis_pos] += sign
 
-                q = (WIDTH - p[0] - 1, HEIGHT - p[1] - 1)
+def check(p):
+    if not 0 <= p[0] < WIDTH or not 0 <= p[1] < HEIGHT:
+        import ipdb; ipdb.set_trace()
+    return p
 
-                mids = list(get_mids(p, q))
 
-                screen.box(color=0)
-                pew.show(screen)
+def rotate(p, clwise=True):
+    x, y = p
+    dx, dy = 0, 0
 
-                screen.pixel(*p, color=3)
-                screen.pixel(*q, color=3)
+    # skew and slide dividing line, so corners end up in opposite segments
+    top_right = 0.9 * x > y - 0.2
+    bottom_right = 1.1 * x > WIDTH - 1 - y + 0.2
 
-                for m in mids:
-                    print(m)
-                    screen.pixel(*m, color=2)
+    # print('top_right' if top_right else 'bottom_left')
+    # print('bottom_right' if bottom_right else 'top_left')
 
-                pew.show(screen)
-                pew.tick(1/8)
+    if top_right:
+        if bottom_right:
+            dy = clwise
+        else:
+            dx = clwise
+    else:
+        if bottom_right:
+            dx = -clwise
+        else:
+            dy = -clwise
+
+    return check([x + dx, y + dy])
+
+
+def random_point(c, d=None):
+    while d is None or c==d:
+        d = [random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1)]
+    check(d)
+    return d
+
+
+def count(n=0):
+    while True:
+        yield n
+        n += 1
+
+
+def draw_round(p, q):
+    for i in count():
+        p = rotate(p)
+        check(p)
+
+        if p == q:
+            continue
+
+        mids = list(get_intermediate_points(p, q))
+
+        # screen.box(color=0)
+
+        screen.pixel(*p, color=3)
+        screen.pixel(*q, color=3)
+
+        for j, m in enumerate(mids):
+            c = (j % 2) + 1
+            screen.pixel(*m, color=c)
+
+        pew.show(screen)
+        pew.tick(1/32)
+
+        # after a few iterations, randomly swap the points
+        if i > 10 and not random.randint(0, 30):
+            return q, p
+
+
+def main():
+    p = [0, 0]
+    q = random_point(p)
+
+    while True:
+        p, q = draw_round(p, q)
+
+
+if __name__ == '__main__':
+    main()
