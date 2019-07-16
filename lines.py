@@ -16,7 +16,7 @@ def get_intermediate_points(a, b):
     deltas = [dx, dy]
 
     long_axis = int(abs(dy) > abs(dx))
-    short_axis = int(not long_axis)
+    short_axis = 1 - long_axis
 
     d_long = deltas[long_axis]
     d_short = deltas[short_axis]
@@ -37,7 +37,8 @@ def get_intermediate_points(a, b):
 
 def check(p):
     if not 0 <= p[0] < WIDTH or not 0 <= p[1] < HEIGHT:
-        import ipdb; ipdb.set_trace()
+        import pdb
+        pdb.set_trace()
     return p
 
 
@@ -67,7 +68,7 @@ def rotate(p, clwise=True):
 
 
 def random_point(c, d=None):
-    while d is None or c==d:
+    while d is None or c == d:
         d = [random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1)]
     check(d)
     return d
@@ -81,6 +82,7 @@ def count(n=0):
 
 def draw_round(p, q):
     for i in count():
+        pew.keys()
         p = rotate(p)
         check(p)
 
@@ -89,17 +91,17 @@ def draw_round(p, q):
 
         mids = list(get_intermediate_points(p, q))
 
-        # screen.box(color=0)
+        screen.box(color=0)
 
         screen.pixel(*p, color=3)
         screen.pixel(*q, color=3)
 
         for j, m in enumerate(mids):
-            c = (j % 2) + 1
+            c = (j % 3) + 1
             screen.pixel(*m, color=c)
 
         pew.show(screen)
-        pew.tick(1/32)
+        pew.tick(1 / 32)
 
         # after a few iterations, randomly swap the points
         if i > 10 and not random.randint(0, 30):
